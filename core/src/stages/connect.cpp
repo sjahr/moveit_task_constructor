@@ -61,6 +61,7 @@ Connect::Connect(const std::string& name, const GroupPlannerVector& planners) : 
 	                                         "constraints to maintain during trajectory");
 	properties().declare<TimeParameterizationPtr>("merge_time_parameterization",
 	                                              std::make_shared<TimeOptimalTrajectoryGeneration>());
+	p.declare<bool>("apply_ruckig_smoothing", false);
 }
 
 void Connect::reset() {
@@ -227,7 +228,8 @@ SubTrajectoryPtr Connect::merge(const std::vector<robot_trajectory::RobotTraject
 	auto jmg = merged_jmg_.get();
 	assert(jmg);
 	auto timing = properties().get<TimeParameterizationPtr>("merge_time_parameterization");
-	robot_trajectory::RobotTrajectoryPtr trajectory = task_constructor::merge(sub_trajectories, state, jmg, *timing);
+	bool apply_ruckig_smoothing = properties().get<bool>("apply_ruckig_smoothing");
+	robot_trajectory::RobotTrajectoryPtr trajectory = task_constructor::merge(sub_trajectories, state, jmg, *timing, apply_ruckig_smoothing);
 	if (!trajectory)
 		return SubTrajectoryPtr();
 

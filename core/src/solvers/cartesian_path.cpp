@@ -40,6 +40,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/trajectory_processing/time_parameterization.h>
 #include <moveit/kinematics_base/kinematics_base.h>
+#include <moveit/trajectory_processing/ruckig_traj_smoothing.h>
 #include <moveit/robot_state/cartesian_interpolator.h>
 
 using namespace trajectory_processing;
@@ -113,6 +114,12 @@ bool CartesianPath::plan(const planning_scene::PlanningSceneConstPtr& from, cons
 	auto timing = props.get<TimeParameterizationPtr>("time_parameterization");
 	timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
 	                          props.get<double>("max_acceleration_scaling_factor"));
+
+	// smoothing
+	if (props.get<bool>("apply_ruckig_smoothing")) {
+		trajectory_processing::RuckigSmoothing ruckig_smoothing;
+		ruckig_smoothing.applySmoothing(*result);
+	}
 
 	return achieved_fraction >= props.get<double>("min_fraction");
 }

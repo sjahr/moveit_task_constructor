@@ -50,6 +50,7 @@ PlannerInterface::PlannerInterface() {
 	p.declare<double>("max_velocity_scaling_factor", 1.0, "scale down max velocity by this factor");
 	p.declare<double>("max_acceleration_scaling_factor", 1.0, "scale down max acceleration by this factor");
 	p.declare<TimeParameterizationPtr>("time_parameterization", std::make_shared<TimeOptimalTrajectoryGeneration>());
+	p.declare<bool>("apply_ruckig_smoothing", false, "whether to apply ruckig smoothing");
 }
 }  // namespace solvers
 }  // namespace task_constructor
