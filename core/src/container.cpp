@@ -1100,6 +1100,8 @@ void MergerPrivate::resolveInterface(InterfaceFlags expected) {
 Merger::Merger(const std::string& name) : Merger(new MergerPrivate(this, name)) {
 	properties().declare<TimeParameterizationPtr>("time_parameterization",
 	                                                 std::make_shared<TimeOptimalTrajectoryGeneration>());
+	properties().declare<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits",
+		std::vector<moveit_msgs::msg::JointLimits>());
 	properties().declare<bool>("apply_ruckig_smoothing", false);
 }
 
@@ -1255,8 +1257,10 @@ void MergerPrivate::merge(const ChildSolutionList& sub_solutions,
 	robot_trajectory::RobotTrajectoryPtr merged;
 	try {
 		auto timing = me_->properties().get<TimeParameterizationPtr>("time_parameterization");
-		bool apply_ruckig_smoothing = me_->properties().get<bool>("apply_ruckig_smoothing");
-		merged = task_constructor::merge(sub_trajectories, start_scene->getCurrentState(), jmg, *timing, apply_ruckig_smoothing);
+		const auto& joint_limits = me_->properties().get<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits");
+		const auto& apply_ruckig_smoothing = me_->properties().get<bool>("apply_ruckig_smoothing");
+		merged = task_constructor::merge(sub_trajectories, start_scene->getCurrentState(), jmg, *timing,
+			joint_limits, apply_ruckig_smoothing);
 	} catch (const std::runtime_error& e) {
 		SubTrajectory t;
 		t.markAsFailure();

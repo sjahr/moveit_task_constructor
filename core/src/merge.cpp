@@ -108,7 +108,7 @@ robot_trajectory::RobotTrajectoryPtr
 merge(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajectories,
       const moveit::core::RobotState& base_state, moveit::core::JointModelGroup*& merged_group,
       const trajectory_processing::TimeParameterization& time_parameterization,
-      const bool& apply_ruckig_smoothing) {
+      const std::vector<moveit_msgs::msg::JointLimits>& joint_limits, const bool& apply_ruckig_smoothing) {
 	if (sub_trajectories.size() <= 1)
 		throw std::runtime_error("Expected multiple sub solutions");
 
@@ -168,12 +168,18 @@ merge(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajecto
 	}
 
 	// add timing
-	time_parameterization.computeTimeStamps(*merged_traj, 1.0, 1.0);
+	if (joint_limits.size() > 0)
+		time_parameterization.computeTimeStamps(*merged_traj, joint_limits);
+	else
+		time_parameterization.computeTimeStamps(*merged_traj, 1.0, 1.0);
 
 	// smoothing
 	if (apply_ruckig_smoothing) {
 		trajectory_processing::RuckigSmoothing ruckig_smoothing;
-		ruckig_smoothing.applySmoothing(*merged_traj);
+		if (joint_limits.size() > 0)
+			ruckig_smoothing.applySmoothing(*merged_traj, joint_limits);
+		else
+			ruckig_smoothing.applySmoothing(*merged_traj, 1.0, 1.0);
 	}
 	return merged_traj;
 }

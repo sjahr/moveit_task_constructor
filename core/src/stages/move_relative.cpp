@@ -71,6 +71,9 @@ MoveRelative::MoveRelative(const std::string& name, const solvers::PlannerInterf
 
 	p.declare<moveit_msgs::msg::Constraints>("path_constraints", moveit_msgs::msg::Constraints(),
 	                                         "constraints to maintain during trajectory");
+	p.declare<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits", std::vector<moveit_msgs::msg::JointLimits>(),
+	                                                      "joint limits to be used during trajectory processing");
+	p.declare<bool>("apply_ruckig_smoothing", false);
 }
 
 void MoveRelative::setIKFrame(const Eigen::Isometry3d& pose, const std::string& link) {
@@ -191,13 +194,16 @@ bool MoveRelative::compute(const InterfaceState& state, planning_scene::Planning
 	double max_distance = props.get<double>("max_distance");
 	double min_distance = props.get<double>("min_distance");
 	const auto& path_constraints = props.get<moveit_msgs::msg::Constraints>("path_constraints");
+	const auto& joint_limits = props.get<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits");
+	const auto& apply_ruckig_smoothing = props.get<bool>("apply_ruckig_smoothing");
 
 	robot_trajectory::RobotTrajectoryPtr robot_trajectory;
 	bool success = false;
 
 	if (getJointStateFromOffset(direction, jmg, scene->getCurrentStateNonConst())) {
 		// plan to joint-space target
-		success = planner_->plan(state.scene(), scene, jmg, timeout, robot_trajectory, path_constraints);
+		success = planner_->plan(state.scene(), scene, jmg, timeout, robot_trajectory, path_constraints, joint_limits,
+		                         apply_ruckig_smoothing);
 	} else {
 		// Cartesian targets require an IK reference frame
 		const moveit::core::LinkModel* link;
@@ -285,7 +291,8 @@ bool MoveRelative::compute(const InterfaceState& state, planning_scene::Planning
 		const Eigen::Isometry3d& offset = scene->getCurrentState().getGlobalLinkTransform(link).inverse() * ik_pose_world;
 
 		success =
-		    planner_->plan(state.scene(), *link, offset, target_eigen, jmg, timeout, robot_trajectory, path_constraints);
+		    planner_->plan(state.scene(), *link, offset, target_eigen, jmg, timeout, robot_trajectory, path_constraints,
+		                   joint_limits, apply_ruckig_smoothing);
 
 		moveit::core::RobotStatePtr& reached_state = robot_trajectory->getLastWayPointPtr();
 		reached_state->updateLinkTransforms();

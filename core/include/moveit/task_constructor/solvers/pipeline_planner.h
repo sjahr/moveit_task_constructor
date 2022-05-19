@@ -85,14 +85,20 @@ public:
 
 	void init(const moveit::core::RobotModelConstPtr& robot_model) override;
 
-	bool plan(const planning_scene::PlanningSceneConstPtr& from, const planning_scene::PlanningSceneConstPtr& to,
-	          const core::JointModelGroup* jmg, double timeout, robot_trajectory::RobotTrajectoryPtr& result,
-	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
+	bool
+	plan(const planning_scene::PlanningSceneConstPtr& from, const planning_scene::PlanningSceneConstPtr& to,
+	     const core::JointModelGroup* jmg, double timeout, robot_trajectory::RobotTrajectoryPtr& result,
+	     const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints(),
+	     const std::vector<moveit_msgs::msg::JointLimits>& joint_limits = std::vector<moveit_msgs::msg::JointLimits>(),
+	     const bool& apply_ruckig_smoothing = false) override;
 
-	bool plan(const planning_scene::PlanningSceneConstPtr& from, const moveit::core::LinkModel& link,
-	          const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target, const moveit::core::JointModelGroup* jmg,
-	          double timeout, robot_trajectory::RobotTrajectoryPtr& result,
-	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
+	bool
+	plan(const planning_scene::PlanningSceneConstPtr& from, const moveit::core::LinkModel& link,
+	     const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target, const core::JointModelGroup* jmg,
+	     double timeout, robot_trajectory::RobotTrajectoryPtr& result,
+	     const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints(),
+	     const std::vector<moveit_msgs::msg::JointLimits>& joint_limits = std::vector<moveit_msgs::msg::JointLimits>(),
+	     const bool& apply_ruckig_smoothing = false) override;
 
 protected:
 	std::string pipeline_name_;

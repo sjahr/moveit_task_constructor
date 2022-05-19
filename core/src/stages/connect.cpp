@@ -61,6 +61,8 @@ Connect::Connect(const std::string& name, const GroupPlannerVector& planners) : 
 	                                         "constraints to maintain during trajectory");
 	properties().declare<TimeParameterizationPtr>("merge_time_parameterization",
 	                                              std::make_shared<TimeOptimalTrajectoryGeneration>());
+	p.declare<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits", std::vector<moveit_msgs::msg::JointLimits>(),
+	                                                      "joint limits to be used during trajectory processing");
 	p.declare<bool>("apply_ruckig_smoothing", false);
 }
 
@@ -140,6 +142,8 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 	double timeout = this->timeout();
 	MergeMode mode = props.get<MergeMode>("merge_mode");
 	const auto& path_constraints = props.get<moveit_msgs::msg::Constraints>("path_constraints");
+	const auto& joint_limits = props.get<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits");
+	const auto& apply_ruckig_smoothing = props.get<bool>("apply_ruckig_smoothing");
 
 	const moveit::core::RobotState& final_goal_state = to.scene()->getCurrentState();
 	std::vector<robot_trajectory::RobotTrajectoryConstPtr> sub_trajectories;
@@ -161,7 +165,8 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 		intermediate_scenes.push_back(end);
 
 		robot_trajectory::RobotTrajectoryPtr trajectory;
-		success = pair.second->plan(start, end, jmg, timeout, trajectory, path_constraints);
+		success = pair.second->plan(start, end, jmg, timeout, trajectory, path_constraints, joint_limits,
+		                            apply_ruckig_smoothing);
 		sub_trajectories.push_back(trajectory);  // include failed trajectory
 
 		if (!success)
@@ -228,8 +233,10 @@ SubTrajectoryPtr Connect::merge(const std::vector<robot_trajectory::RobotTraject
 	auto jmg = merged_jmg_.get();
 	assert(jmg);
 	auto timing = properties().get<TimeParameterizationPtr>("merge_time_parameterization");
-	bool apply_ruckig_smoothing = properties().get<bool>("apply_ruckig_smoothing");
-	robot_trajectory::RobotTrajectoryPtr trajectory = task_constructor::merge(sub_trajectories, state, jmg, *timing, apply_ruckig_smoothing);
+	const auto& joint_limits = properties().get<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits");
+	const auto& apply_ruckig_smoothing = properties().get<bool>("apply_ruckig_smoothing");
+	robot_trajectory::RobotTrajectoryPtr trajectory =
+	    task_constructor::merge(sub_trajectories, state, jmg, *timing, joint_limits, apply_ruckig_smoothing);
 	if (!trajectory)
 		return SubTrajectoryPtr();
 

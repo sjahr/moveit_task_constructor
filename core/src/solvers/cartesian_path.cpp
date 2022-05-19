@@ -67,7 +67,9 @@ void CartesianPath::init(const core::RobotModelConstPtr& /*robot_model*/) {}
 bool CartesianPath::plan(const planning_scene::PlanningSceneConstPtr& from,
                          const planning_scene::PlanningSceneConstPtr& to, const moveit::core::JointModelGroup* jmg,
                          double timeout, robot_trajectory::RobotTrajectoryPtr& result,
-                         const moveit_msgs::msg::Constraints& path_constraints) {
+                         const moveit_msgs::msg::Constraints& path_constraints,
+                         const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                         const bool& apply_ruckig_smoothing) {
 	const moveit::core::LinkModel* link = jmg->getOnlyOneEndEffectorTip();
 	if (!link) {
 		RCLCPP_WARN_STREAM(LOGGER, "no unique tip for joint model group: " << jmg->getName());
@@ -76,14 +78,16 @@ bool CartesianPath::plan(const planning_scene::PlanningSceneConstPtr& from,
 
 	// reach pose of forward kinematics
 	return plan(from, *link, Eigen::Isometry3d::Identity(), to->getCurrentState().getGlobalLinkTransform(link), jmg,
-	            timeout, result, path_constraints);
+	            timeout, result, path_constraints, joint_limits, apply_ruckig_smoothing);
 }
 
 bool CartesianPath::plan(const planning_scene::PlanningSceneConstPtr& from, const moveit::core::LinkModel& link,
                          const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target,
                          const moveit::core::JointModelGroup* jmg, double /*timeout*/,
                          robot_trajectory::RobotTrajectoryPtr& result,
-                         const moveit_msgs::msg::Constraints& path_constraints) {
+                         const moveit_msgs::msg::Constraints& path_constraints,
+                         const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                         const bool& apply_ruckig_smoothing) {
 	const auto& props = properties();
 	planning_scene::PlanningScenePtr sandbox_scene = from->diff();
 
@@ -112,13 +116,21 @@ bool CartesianPath::plan(const planning_scene::PlanningSceneConstPtr& from, cons
 		result->addSuffixWayPoint(waypoint, 0.0);
 
 	auto timing = props.get<TimeParameterizationPtr>("time_parameterization");
-	timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
-	                          props.get<double>("max_acceleration_scaling_factor"));
+
+	if (joint_limits.size() > 0)
+		timing->computeTimeStamps(*result, joint_limits);
+	else
+		timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
+		                          props.get<double>("max_acceleration_scaling_factor"));
 
 	// smoothing
-	if (props.get<bool>("apply_ruckig_smoothing")) {
+	if (apply_ruckig_smoothing) {
 		trajectory_processing::RuckigSmoothing ruckig_smoothing;
-		ruckig_smoothing.applySmoothing(*result);
+		if (joint_limits.size() > 0)
+			ruckig_smoothing.applySmoothing(*result, joint_limits);
+		else
+			ruckig_smoothing.applySmoothing(*result, props.get<double>("max_velocity_scaling_factor"),
+			                                props.get<double>("max_acceleration_scaling_factor"));
 	}
 
 	return achieved_fraction >= props.get<double>("min_fraction");

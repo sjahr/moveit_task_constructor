@@ -74,6 +74,9 @@ MoveTo::MoveTo(const std::string& name, const solvers::PlannerInterfacePtr& plan
 
 	p.declare<moveit_msgs::msg::Constraints>("path_constraints", moveit_msgs::msg::Constraints(),
 	                                         "constraints to maintain during trajectory");
+	p.declare<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits", std::vector<moveit_msgs::msg::JointLimits>(),
+	                                                      "joint limits to be used during trajectory processing");
+	p.declare<bool>("apply_ruckig_smoothing", false);
 }
 
 void MoveTo::setIKFrame(const Eigen::Isometry3d& pose, const std::string& link) {
@@ -203,12 +206,15 @@ bool MoveTo::compute(const InterfaceState& state, planning_scene::PlanningSceneP
 	}
 
 	const auto& path_constraints = props.get<moveit_msgs::msg::Constraints>("path_constraints");
+	const auto& joint_limits = props.get<std::vector<moveit_msgs::msg::JointLimits>>("joint_limits");
+	const auto& apply_ruckig_smoothing = props.get<bool>("apply_ruckig_smoothing");
 	robot_trajectory::RobotTrajectoryPtr robot_trajectory;
 	bool success = false;
 
 	if (getJointStateGoal(goal, jmg, scene->getCurrentStateNonConst())) {
 		// plan to joint-space target
-		success = planner_->plan(state.scene(), scene, jmg, timeout, robot_trajectory, path_constraints);
+		success = planner_->plan(state.scene(), scene, jmg, timeout, robot_trajectory, path_constraints, joint_limits,
+		                         apply_ruckig_smoothing);
 	} else {  // Cartesian goal
 		// Where to go?
 		Eigen::Isometry3d target;
@@ -240,7 +246,8 @@ bool MoveTo::compute(const InterfaceState& state, planning_scene::PlanningSceneP
 		Eigen::Isometry3d offset = scene->getCurrentState().getGlobalLinkTransform(link).inverse() * ik_pose_world;
 
 		// plan to Cartesian target
-		success = planner_->plan(state.scene(), *link, offset, target, jmg, timeout, robot_trajectory, path_constraints);
+		success = planner_->plan(state.scene(), *link, offset, target, jmg, timeout, robot_trajectory, path_constraints,
+		                         joint_limits, apply_ruckig_smoothing);
 	}
 
 	// store result

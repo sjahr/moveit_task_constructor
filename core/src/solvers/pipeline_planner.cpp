@@ -168,7 +168,9 @@ void initMotionPlanRequest(moveit_msgs::msg::MotionPlanRequest& req, const Prope
 bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from,
                            const planning_scene::PlanningSceneConstPtr& to, const moveit::core::JointModelGroup* jmg,
                            double timeout, robot_trajectory::RobotTrajectoryPtr& result,
-                           const moveit_msgs::msg::Constraints& path_constraints) {
+                           const moveit_msgs::msg::Constraints& path_constraints,
+                           const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                           const bool& apply_ruckig_smoothing) {
 	const auto& props = properties();
 	moveit_msgs::msg::MotionPlanRequest req;
 	initMotionPlanRequest(req, props, jmg, timeout);
@@ -177,6 +179,11 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from,
 	req.goal_constraints[0] = kinematic_constraints::constructGoalConstraints(to->getCurrentState(), jmg,
 	                                                                          props.get<double>("goal_joint_tolerance"));
 	req.path_constraints = path_constraints;
+
+	req.joint_limits = joint_limits;
+	req.use_joint_limits = joint_limits.size() > 0;
+
+	req.skip_smoothing = !apply_ruckig_smoothing;
 
 	::planning_interface::MotionPlanResponse res;
 	bool success = planner_->generatePlan(from, req, res);
@@ -188,7 +195,9 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from, co
                            const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target_eigen,
                            const moveit::core::JointModelGroup* jmg, double timeout,
                            robot_trajectory::RobotTrajectoryPtr& result,
-                           const moveit_msgs::msg::Constraints& path_constraints) {
+                           const moveit_msgs::msg::Constraints& path_constraints,
+                           const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                           const bool& apply_ruckig_smoothing) {
 	const auto& props = properties();
 	moveit_msgs::msg::MotionPlanRequest req;
 	initMotionPlanRequest(req, props, jmg, timeout);
@@ -202,6 +211,11 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from, co
 	    link.getName(), target, props.get<double>("goal_position_tolerance"),
 	    props.get<double>("goal_orientation_tolerance"));
 	req.path_constraints = path_constraints;
+
+	req.joint_limits = joint_limits;
+	req.use_joint_limits = joint_limits.size() > 0;
+
+	req.skip_smoothing = !apply_ruckig_smoothing;
 
 	::planning_interface::MotionPlanResponse res;
 	bool success = planner_->generatePlan(from, req, res);

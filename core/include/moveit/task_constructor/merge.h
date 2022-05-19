@@ -60,6 +60,6 @@ robot_trajectory::RobotTrajectoryPtr
 merge(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajectories,
       const moveit::core::RobotState& base_state, moveit::core::JointModelGroup*& merged_group,
       const trajectory_processing::TimeParameterization& time_parameterization,
-      const bool& apply_ruckig_smoothing);
+      const std::vector<moveit_msgs::msg::JointLimits>& joint_limits, const bool& apply_ruckig_smoothing);
 }  // namespace task_constructor
 }  // namespace moveit

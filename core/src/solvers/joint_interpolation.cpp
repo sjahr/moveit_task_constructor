@@ -62,7 +62,9 @@ bool JointInterpolationPlanner::plan(const planning_scene::PlanningSceneConstPtr
                                      const planning_scene::PlanningSceneConstPtr& to,
                                      const moveit::core::JointModelGroup* jmg, double /*timeout*/,
                                      robot_trajectory::RobotTrajectoryPtr& result,
-                                     const moveit_msgs::msg::Constraints& /*path_constraints*/) {
+                                     const moveit_msgs::msg::Constraints& /*path_constraints*/,
+                                     const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                                     const bool& apply_ruckig_smoothing) {
 	const auto& props = properties();
 
 	// Get maximum joint distance
@@ -95,13 +97,21 @@ bool JointInterpolationPlanner::plan(const planning_scene::PlanningSceneConstPtr
 		return false;
 
 	auto timing = props.get<TimeParameterizationPtr>("time_parameterization");
-	timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
-	                          props.get<double>("max_acceleration_scaling_factor"));
+
+	if (joint_limits.size() > 0)
+		timing->computeTimeStamps(*result, joint_limits);
+	else
+		timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
+		                          props.get<double>("max_acceleration_scaling_factor"));
 
 	// smoothing
-	if (props.get<bool>("apply_ruckig_smoothing")) {
+	if (apply_ruckig_smoothing) {
 		trajectory_processing::RuckigSmoothing ruckig_smoothing;
-		ruckig_smoothing.applySmoothing(*result);
+		if (joint_limits.size() > 0)
+			ruckig_smoothing.applySmoothing(*result, joint_limits);
+		else
+			ruckig_smoothing.applySmoothing(*result, props.get<double>("max_velocity_scaling_factor"),
+			                                props.get<double>("max_acceleration_scaling_factor"));
 	}
 
 	return true;
@@ -111,7 +121,9 @@ bool JointInterpolationPlanner::plan(const planning_scene::PlanningSceneConstPtr
                                      const moveit::core::LinkModel& link, const Eigen::Isometry3d& offset,
                                      const Eigen::Isometry3d& target, const moveit::core::JointModelGroup* jmg,
                                      double timeout, robot_trajectory::RobotTrajectoryPtr& result,
-                                     const moveit_msgs::msg::Constraints& path_constraints) {
+                                     const moveit_msgs::msg::Constraints& path_constraints,
+                                     const std::vector<moveit_msgs::msg::JointLimits>& joint_limits,
+                                     const bool& apply_ruckig_smoothing) {
 	const auto start_time = std::chrono::steady_clock::now();
 
 	auto to{ from->diff() };
@@ -138,7 +150,7 @@ bool JointInterpolationPlanner::plan(const planning_scene::PlanningSceneConstPtr
 	if (timeout <= 0.0)
 		return false;
 
-	return plan(from, to, jmg, timeout, result, path_constraints);
+	return plan(from, to, jmg, timeout, result, path_constraints, joint_limits, apply_ruckig_smoothing);
 }
 }  // namespace solvers
 }  // namespace task_constructor
