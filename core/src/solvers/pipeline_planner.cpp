@@ -181,7 +181,6 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from,
 	req.path_constraints = path_constraints;
 
 	req.joint_limits = joint_limits;
-	req.use_joint_limits = joint_limits.size() > 0;
 
 	req.skip_smoothing = !apply_ruckig_smoothing;
 
@@ -213,7 +212,6 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from, co
 	req.path_constraints = path_constraints;
 
 	req.joint_limits = joint_limits;
-	req.use_joint_limits = joint_limits.size() > 0;
 
 	req.skip_smoothing = !apply_ruckig_smoothing;
 

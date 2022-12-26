@@ -97,21 +97,14 @@ bool JointInterpolationPlanner::plan(const planning_scene::PlanningSceneConstPtr
 		return false;
 
 	auto timing = props.get<TimeParameterizationPtr>("time_parameterization");
-
-	if (joint_limits.size() > 0)
-		timing->computeTimeStamps(*result, joint_limits);
-	else
-		timing->computeTimeStamps(*result, props.get<double>("max_velocity_scaling_factor"),
-		                          props.get<double>("max_acceleration_scaling_factor"));
+	timing->computeTimeStamps(*result, joint_limits, props.get<double>("max_velocity_scaling_factor"),
+	                          props.get<double>("max_acceleration_scaling_factor"));
 
 	// smoothing
 	if (apply_ruckig_smoothing) {
 		trajectory_processing::RuckigSmoothing ruckig_smoothing;
-		if (joint_limits.size() > 0)
-			ruckig_smoothing.applySmoothing(*result, joint_limits);
-		else
-			ruckig_smoothing.applySmoothing(*result, props.get<double>("max_velocity_scaling_factor"),
-			                                props.get<double>("max_acceleration_scaling_factor"));
+		ruckig_smoothing.applySmoothing(*result, joint_limits, props.get<double>("max_velocity_scaling_factor"),
+		                                props.get<double>("max_acceleration_scaling_factor"));
 	}
 
 	return true;

@@ -168,18 +168,12 @@ merge(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajecto
 	}
 
 	// add timing
-	if (joint_limits.size() > 0)
-		time_parameterization.computeTimeStamps(*merged_traj, joint_limits);
-	else
-		time_parameterization.computeTimeStamps(*merged_traj, 1.0, 1.0);
+	time_parameterization.computeTimeStamps(*merged_traj, joint_limits, 1.0, 1.0);
 
 	// smoothing
 	if (apply_ruckig_smoothing) {
 		trajectory_processing::RuckigSmoothing ruckig_smoothing;
-		if (joint_limits.size() > 0)
-			ruckig_smoothing.applySmoothing(*merged_traj, joint_limits);
-		else
-			ruckig_smoothing.applySmoothing(*merged_traj, 1.0, 1.0);
+		ruckig_smoothing.applySmoothing(*merged_traj, joint_limits, 1.0, 1.0);
 	}
 	return merged_traj;
 }
