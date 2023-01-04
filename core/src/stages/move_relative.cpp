@@ -290,9 +290,8 @@ bool MoveRelative::compute(const InterfaceState& state, planning_scene::Planning
 		// offset from link to ik_frame
 		const Eigen::Isometry3d& offset = scene->getCurrentState().getGlobalLinkTransform(link).inverse() * ik_pose_world;
 
-		success =
-		    planner_->plan(state.scene(), *link, offset, target_eigen, jmg, timeout, robot_trajectory, path_constraints,
-		                   joint_limits, apply_ruckig_smoothing);
+		success = planner_->plan(state.scene(), *link, offset, target_eigen, jmg, timeout, robot_trajectory,
+		                         path_constraints, joint_limits, apply_ruckig_smoothing);
 
 		moveit::core::RobotStatePtr& reached_state = robot_trajectory->getLastWayPointPtr();
 		reached_state->updateLinkTransforms();
