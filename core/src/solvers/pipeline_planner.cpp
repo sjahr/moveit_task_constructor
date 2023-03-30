@@ -54,63 +54,65 @@ namespace moveit {
 namespace task_constructor {
 namespace solvers {
 
+/*
 static constexpr char const* PLUGIN_PARAMETER_NAME = "planning_plugin";
 
 struct PlannerCache
 {
-	using PlannerID = std::tuple<std::string, std::string>;
-	using PlannerMap = std::map<PlannerID, std::weak_ptr<planning_pipeline::PlanningPipeline>>;
-	using ModelList = std::list<std::pair<std::weak_ptr<const moveit::core::RobotModel>, PlannerMap>>;
-	ModelList cache_;
+   using PlannerID = std::tuple<std::string, std::string>;
+   using PlannerMap = std::map<PlannerID, std::weak_ptr<planning_pipeline::PlanningPipeline>>;
+   using ModelList = std::list<std::pair<std::weak_ptr<const moveit::core::RobotModel>, PlannerMap>>;
+   ModelList cache_;
 
-	PlannerMap::mapped_type& retrieve(const moveit::core::RobotModelConstPtr& model, const PlannerID& planner_id) {
-		// find model in cache_ and remove expired entries while doing so
-		ModelList::iterator model_it = cache_.begin();
-		while (model_it != cache_.end()) {
-			if (model_it->first.expired()) {
-				model_it = cache_.erase(model_it);
-				continue;
-			}
-			if (model_it->first.lock() == model)
-				break;
-			++model_it;
-		}
-		if (model_it == cache_.end())  // if not found, create a new PlannerMap for this model
-			model_it = cache_.insert(cache_.begin(), std::make_pair(model, PlannerMap()));
+   PlannerMap::mapped_type& retrieve(const moveit::core::RobotModelConstPtr& model, const PlannerID& planner_id) {
+      // find model in cache_ and remove expired entries while doing so
+      ModelList::iterator model_it = cache_.begin();
+      while (model_it != cache_.end()) {
+         if (model_it->first.expired()) {
+            model_it = cache_.erase(model_it);
+            continue;
+         }
+         if (model_it->first.lock() == model)
+            break;
+         ++model_it;
+      }
+      if (model_it == cache_.end())  // if not found, create a new PlannerMap for this model
+         model_it = cache_.insert(cache_.begin(), std::make_pair(model, PlannerMap()));
 
-		return model_it->second.insert(std::make_pair(planner_id, PlannerMap::mapped_type())).first->second;
-	}
-};
+      return model_it->second.insert(std::make_pair(planner_id, PlannerMap::mapped_type())).first->second;
+   }
+};*/
 
+/*
 planning_pipeline::PlanningPipelinePtr PipelinePlanner::create(const rclcpp::Node::SharedPtr& node,
                                                                const PipelinePlanner::Specification& specification) {
-	static PlannerCache cache;
+   static PlannerCache cache;
 
-	std::string pipeline_ns = specification.ns;
-	const std::string parameter_name = pipeline_ns + "." + PLUGIN_PARAMETER_NAME;
-	// fallback to old structure for pipeline parameters in MoveIt
-	if (!node->has_parameter(parameter_name)) {
-		node->declare_parameter(parameter_name, rclcpp::ParameterType::PARAMETER_STRING);
-	}
-	if (std::string parameter; !node->get_parameter(parameter_name, parameter)) {
-		RCLCPP_WARN(node->get_logger(), "Failed to find '%s.%s'. %s", pipeline_ns.c_str(), PLUGIN_PARAMETER_NAME,
-		            "Attempting to load pipeline from old parameter structure. Please update your MoveIt config.");
-		pipeline_ns = "move_group";
-	}
+   std::string pipeline_ns = specification.ns;
+   const std::string parameter_name = pipeline_ns + "." + PLUGIN_PARAMETER_NAME;
+   // fallback to old structure for pipeline parameters in MoveIt
+   if (!node->has_parameter(parameter_name)) {
+      node->declare_parameter(parameter_name, rclcpp::ParameterType::PARAMETER_STRING);
+   }
+   if (std::string parameter; !node->get_parameter(parameter_name, parameter)) {
+      RCLCPP_WARN(node->get_logger(), "Failed to find '%s.%s'. %s", pipeline_ns.c_str(), PLUGIN_PARAMETER_NAME,
+                  "Attempting to load pipeline from old parameter structure. Please update your MoveIt config.");
+      pipeline_ns = "move_group";
+   }
 
-	PlannerCache::PlannerID id(pipeline_ns, specification.adapter_param);
+   PlannerCache::PlannerID id(pipeline_ns, specification.adapter_param);
 
-	std::weak_ptr<planning_pipeline::PlanningPipeline>& entry = cache.retrieve(specification.model, id);
-	planning_pipeline::PlanningPipelinePtr planner = entry.lock();
-	if (!planner) {
-		// create new entry
-		planner = std::make_shared<planning_pipeline::PlanningPipeline>(
-		    specification.model, node, pipeline_ns, PLUGIN_PARAMETER_NAME, specification.adapter_param);
-		// store in cache
-		entry = planner;
-	}
-	return planner;
-}
+   std::weak_ptr<planning_pipeline::PlanningPipeline>& entry = cache.retrieve(specification.model, id);
+   planning_pipeline::PlanningPipelinePtr planner = entry.lock();
+   if (!planner) {
+      // create new entry
+      planner = std::make_shared<planning_pipeline::PlanningPipeline>(
+          specification.model, node, pipeline_ns, PLUGIN_PARAMETER_NAME, specification.adapter_param);
+      // store in cache
+      entry = planner;
+   }
+   return planner;
+}*/
 
 PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name) : node_(node) {
 	pipeline_names_.at(0) = pipeline_name;
@@ -132,25 +134,19 @@ PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std:
 	                               planning_pipeline::PlanningPipeline::MOTION_PLAN_REQUEST_TOPIC);
 }
 
-PipelinePlanner::PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline)
-  : PipelinePlanner(rclcpp::Node::SharedPtr()) {
-	planning_pipelines_.at(0) = planning_pipeline;
-}
+// PipelinePlanner::PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline)
+//  : PipelinePlanner(rclcpp::Node::SharedPtr()) {
+//	planning_pipelines_.at(0) = planning_pipeline;
+//}
 
 void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
-	if (!planning_pipelines_.at(0)) {
-		Specification specification;
-		specification.model = robot_model;
-		specification.pipeline = pipeline_names_.at(0);
-		specification.ns = pipeline_names_.at(0);
-		planning_pipelines_.at(0) = create(node_, specification);
-	} else if (robot_model != planning_pipelines_.at(0)->getRobotModel()) {
-		throw std::runtime_error(
-		    "The robot model of the planning pipeline isn't the same as the task's robot model -- "
-		    "use Task::setRobotModel for setting the robot model when using custom planning pipeline");
+	planning_pipelines_ =
+	    moveit::planning_pipeline_interfaces::createPlanningPipelineMap(pipeline_names_, robot_model, node_);
+
+	for (auto const& name_pipeline_pair : planning_pipelines_) {
+		name_pipeline_pair.second->displayComputedMotionPlans(properties().get<bool>("display_motion_plans"));
+		name_pipeline_pair.second->publishReceivedRequests(properties().get<bool>("publish_planning_requests"));
 	}
-	planning_pipelines_.at(0)->displayComputedMotionPlans(properties().get<bool>("display_motion_plans"));
-	planning_pipelines_.at(0)->publishReceivedRequests(properties().get<bool>("publish_planning_requests"));
 }
 
 bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from,
@@ -189,6 +185,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 
 	for (auto const& pipeline_name : pipeline_names_) {
 		moveit_msgs::msg::MotionPlanRequest request;
+		request.pipeline_id = pipeline_name;
 		request.group_name = joint_model_group->getName();
 		request.planner_id = properties().get<std::string>("planner");
 		request.allowed_planning_time = timeout;
@@ -205,8 +202,10 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 
 	std::vector<::planning_interface::MotionPlanResponse> responses =
 	    moveit::planning_pipeline_interfaces::planWithParallelPipelines(requests, planning_scene, planning_pipelines_);
+
+	// Just choose first result
 	result = responses.at(0).trajectory;
-	return bool(responses);
+	return bool(result);
 }
 }  // namespace solvers
 }  // namespace task_constructor

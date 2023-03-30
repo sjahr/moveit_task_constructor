@@ -56,20 +56,22 @@ MOVEIT_CLASS_FORWARD(PipelinePlanner);
 class PipelinePlanner : public PlannerInterface
 {
 public:
+	/*
 	struct Specification
 	{
-		moveit::core::RobotModelConstPtr model;
-		std::string ns{ "ompl" };
-		std::string pipeline{ "ompl" };
-		std::string adapter_param{ "request_adapters" };
-	};
+	   moveit::core::RobotModelConstPtr model;
+	   std::string ns{ "ompl" };
+	   std::string pipeline{ "ompl" };
+	   std::string adapter_param{ "request_adapters" };
+	};*/
 
+	/*
 	static planning_pipeline::PlanningPipelinePtr
 	createPlanningPipelines(const rclcpp::Node::SharedPtr& node, const moveit::core::RobotModelConstPtr& model) {
-		Specification spec;
-		spec.model = model;
-		return create(node, spec);
-	}
+	   Specification spec;
+	   spec.model = model;
+	   return create(node, spec);
+	}*/
 
 	/**
 	 *
@@ -77,11 +79,13 @@ public:
 	 */
 	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_namespace = "ompl");
 
-	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::vector<std::string>& pipeline_namespaces);
+	// PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::vector<std::string>& pipeline_namespaces);
 
-	PipelinePlanner(const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>& planning_pipelines);
+	// PipelinePlanner(const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>&
+	// planning_pipelines);
 
-	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline, const std::string& pipeline = "");
+	// PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline, const std::string& pipeline =
+	// "");
 
 	void setPlannerId(const std::string& planner) { setProperty("planner", planner); }
 
@@ -106,8 +110,7 @@ protected:
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints());
 
 	std::vector<std::string> pipeline_names_ = std::vector<std::string>(1);
-	std::vector<planning_pipeline::PlanningPipelinePtr> planning_pipelines_ =
-	    std::vector<planning_pipeline::PlanningPipelinePtr>(1, nullptr);
+	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
 	rclcpp::Node::SharedPtr node_;
 };
 }  // namespace solvers
