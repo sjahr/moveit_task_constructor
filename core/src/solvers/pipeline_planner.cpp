@@ -41,6 +41,8 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/planning_pipeline/planning_pipeline.h>
 #include <moveit/planning_pipeline_interfaces/planning_pipeline_interfaces.hpp>
+#include <moveit/planning_pipeline_interfaces/solution_selection_functions.hpp>
+#include <moveit/planning_pipeline_interfaces/stopping_criterion_functions.hpp>
 #include <moveit_msgs/msg/motion_plan_request.hpp>
 #include <moveit/kinematic_constraints/utils.h>
 
@@ -246,7 +248,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	}
 
 	std::vector<::planning_interface::MotionPlanResponse> responses =
-	    moveit::planning_pipeline_interfaces::planWithParallelPipelines(requests, planning_scene, planning_pipelines_);
+	    moveit::planning_pipeline_interfaces::planWithParallelPipelines(requests, planning_scene, planning_pipelines_, &moveit::planning_pipeline_interfaces::stopAtFirstSolution, &moveit::planning_pipeline_interfaces::getShortestSolution);
 
 	// Just choose first result
 	if (!responses.empty()) {
