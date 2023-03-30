@@ -50,6 +50,10 @@
 #include <tf2_eigen/tf2_eigen.h>
 #endif
 
+namespace {
+const std::pair<std::string, std::string> DEFAULT_REQUESTED_PIPELINE =
+    std::pair<std::string, std::string>("ompl", "RRTConnect");
+}
 namespace moveit {
 namespace task_constructor {
 namespace solvers {
@@ -114,10 +118,25 @@ planning_pipeline::PlanningPipelinePtr PipelinePlanner::create(const rclcpp::Nod
    return planner;
 }*/
 
-PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name) : node_(node) {
-	pipeline_names_.at(0) = pipeline_name;
-	properties().declare<std::string>("planner", "", "planner id");
+PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name,
+                                 const std::string& planner_id)
+  : PipelinePlanner(node, [&]() {
+	  std::unordered_map<std::string, std::string> pipeline_id_planner_id_map;
+	  pipeline_id_planner_id_map[pipeline_name] = planner_id;
+	  return pipeline_id_planner_id_map;
+  }()) {}
 
+PipelinePlanner::PipelinePlanner(
+    const rclcpp::Node::SharedPtr& node, const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
+    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines)
+  : node_(node), pipeline_id_planner_id_map_(pipeline_id_planner_id_map) {
+	for (auto pipeline_id_planner_id_pair : pipeline_id_planner_id_map_) {
+		RCLCPP_WARN(node_->get_logger(), "'%s' : ''%s", pipeline_id_planner_id_pair.first.c_str(),
+		            pipeline_id_planner_id_pair.second.c_str());
+	}
+	if (!planning_pipelines.empty()) {
+		planning_pipelines_ = planning_pipelines;
+	}
 	properties().declare<uint>("num_planning_attempts", 1u, "number of planning attempts");
 	properties().declare<moveit_msgs::msg::WorkspaceParameters>(
 	    "workspace_parameters", moveit_msgs::msg::WorkspaceParameters(), "allowed workspace of mobile base?");
@@ -139,9 +158,26 @@ PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std:
 //	planning_pipelines_.at(0) = planning_pipeline;
 //}
 
+bool PipelinePlanner::setPlannerId(const std::string& pipeline_name, const std::string& planner_id) {
+	if (pipeline_id_planner_id_map_.count(pipeline_name) > 0) {
+		pipeline_id_planner_id_map_[pipeline_name] = planner_id;
+	}
+	RCLCPP_WARN(node_->get_logger(), "PipelinePlanner does not have a pipeline called '%s'", pipeline_name.c_str());
+	return false;
+}
+
 void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
-	planning_pipelines_ =
-	    moveit::planning_pipeline_interfaces::createPlanningPipelineMap(pipeline_names_, robot_model, node_);
+	if (planning_pipelines_.empty()) {
+		planning_pipelines_ = moveit::planning_pipeline_interfaces::createPlanningPipelineMap(
+		    [&]() {
+			    std::vector<std::string> pipeline_names;
+			    for (const auto& pipeline_name_planner_id_pair : pipeline_id_planner_id_map_) {
+				    pipeline_names.push_back(pipeline_name_planner_id_pair.first);
+			    }
+			    return pipeline_names;
+		    }(),
+		    robot_model, node_);
+	}
 
 	for (auto const& name_pipeline_pair : planning_pipelines_) {
 		name_pipeline_pair.second->displayComputedMotionPlans(properties().get<bool>("display_motion_plans"));
@@ -181,13 +217,22 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
                            robot_trajectory::RobotTrajectoryPtr& result,
                            const moveit_msgs::msg::Constraints& path_constraints) {
 	std::vector<moveit_msgs::msg::MotionPlanRequest> requests;
-	requests.reserve(pipeline_names_.size());
+	requests.reserve(pipeline_id_planner_id_map_.size());
 
-	for (auto const& pipeline_name : pipeline_names_) {
+	for (auto const& pipeline_id_planner_id_pair : pipeline_id_planner_id_map_) {
+		RCLCPP_WARN(node_->get_logger(), "'%s' : ''%s", pipeline_id_planner_id_pair.first.c_str(),
+		            pipeline_id_planner_id_pair.second.c_str());
+		if (planning_pipelines_.find(pipeline_id_planner_id_pair.first) == planning_pipelines_.end()) {
+			RCLCPP_WARN(
+			    node_->get_logger(),
+			    "Pipeline '%s' is not available of this PipelineSolver instance. Skipping a request for this pipeline.",
+			    pipeline_id_planner_id_pair.first.c_str());
+			continue;
+		}
 		moveit_msgs::msg::MotionPlanRequest request;
-		request.pipeline_id = pipeline_name;
+		request.pipeline_id = pipeline_id_planner_id_pair.first;
 		request.group_name = joint_model_group->getName();
-		request.planner_id = properties().get<std::string>("planner");
+		request.planner_id = pipeline_id_planner_id_pair.second;
 		request.allowed_planning_time = timeout;
 		request.start_state.is_diff = true;  // we don't specify an extra start state
 		request.num_planning_attempts = properties().get<uint>("num_planning_attempts");
@@ -204,8 +249,11 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	    moveit::planning_pipeline_interfaces::planWithParallelPipelines(requests, planning_scene, planning_pipelines_);
 
 	// Just choose first result
-	result = responses.at(0).trajectory;
-	return bool(result);
+	if (!responses.empty()) {
+		result = responses.at(0).trajectory;
+		return bool(result);
+	}
+	return false;
 }
 }  // namespace solvers
 }  // namespace task_constructor

@@ -73,21 +73,20 @@ public:
 	   return create(node, spec);
 	}*/
 
-	/**
-	 *
-	 * @param node used to load the parameters for the planning pipeline
-	 */
-	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_namespace = "ompl");
+	// TODO: Deprecate
+	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name = "ompl",
+	                const std::string& planner_id = "");
 
-	// PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::vector<std::string>& pipeline_namespaces);
+	PipelinePlanner(const rclcpp::Node::SharedPtr& node,
+	                const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
+	                const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines =
+	                    std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>());
 
-	// PipelinePlanner(const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>&
-	// planning_pipelines);
+	// TODO: Deprecate
+	void setPlannerId(const std::string& /*planner*/) { /* Do nothing */
+	}
 
-	// PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline, const std::string& pipeline =
-	// "");
-
-	void setPlannerId(const std::string& planner) { setProperty("planner", planner); }
+	bool setPlannerId(const std::string& pipeline_name, const std::string& planner_id);
 
 	void init(const moveit::core::RobotModelConstPtr& robot_model) override;
 
@@ -109,9 +108,9 @@ protected:
 	          robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints());
 
-	std::vector<std::string> pipeline_names_ = std::vector<std::string>(1);
-	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
 	rclcpp::Node::SharedPtr node_;
+	std::unordered_map<std::string, std::string> pipeline_id_planner_id_map_;
+	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
 };
 }  // namespace solvers
 }  // namespace task_constructor
