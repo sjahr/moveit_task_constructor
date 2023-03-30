@@ -64,39 +64,50 @@ public:
 		std::string adapter_param{ "request_adapters" };
 	};
 
-	static planning_pipeline::PlanningPipelinePtr create(const rclcpp::Node::SharedPtr& node,
-	                                                     const moveit::core::RobotModelConstPtr& model) {
+	static planning_pipeline::PlanningPipelinePtr
+	createPlanningPipelines(const rclcpp::Node::SharedPtr& node, const moveit::core::RobotModelConstPtr& model) {
 		Specification spec;
 		spec.model = model;
 		return create(node, spec);
 	}
 
-	static planning_pipeline::PlanningPipelinePtr create(const rclcpp::Node::SharedPtr& node, const Specification& spec);
-
 	/**
 	 *
 	 * @param node used to load the parameters for the planning pipeline
 	 */
-	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline = "ompl");
+	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_namespace = "ompl");
 
-	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline);
+	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::vector<std::string>& pipeline_namespaces);
+
+	PipelinePlanner(const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>& planning_pipelines);
+
+	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline, const std::string& pipeline = "");
 
 	void setPlannerId(const std::string& planner) { setProperty("planner", planner); }
 
 	void init(const moveit::core::RobotModelConstPtr& robot_model) override;
 
 	bool plan(const planning_scene::PlanningSceneConstPtr& from, const planning_scene::PlanningSceneConstPtr& to,
-	          const core::JointModelGroup* joint_model_group, double timeout, robot_trajectory::RobotTrajectoryPtr& result,
+	          const core::JointModelGroup* joint_model_group, double timeout,
+	          robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
 
 	bool plan(const planning_scene::PlanningSceneConstPtr& from, const moveit::core::LinkModel& link,
-	          const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target, const moveit::core::JointModelGroup* joint_model_group,
-	          double timeout, robot_trajectory::RobotTrajectoryPtr& result,
+	          const Eigen::Isometry3d& offset, const Eigen::Isometry3d& target,
+	          const moveit::core::JointModelGroup* joint_model_group, double timeout,
+	          robot_trajectory::RobotTrajectoryPtr& result,
 	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints()) override;
 
 protected:
-	std::string pipeline_name_;
-	planning_pipeline::PlanningPipelinePtr planner_;
+	bool plan(const planning_scene::PlanningSceneConstPtr& planning_scene,
+	          const moveit::core::JointModelGroup* joint_model_group,
+	          const moveit_msgs::msg::Constraints& goal_constraints, double timeout,
+	          robot_trajectory::RobotTrajectoryPtr& result,
+	          const moveit_msgs::msg::Constraints& path_constraints = moveit_msgs::msg::Constraints());
+
+	std::vector<std::string> pipeline_names_ = std::vector<std::string>(1);
+	std::vector<planning_pipeline::PlanningPipelinePtr> planning_pipelines_ =
+	    std::vector<planning_pipeline::PlanningPipelinePtr>(1, nullptr);
 	rclcpp::Node::SharedPtr node_;
 };
 }  // namespace solvers
