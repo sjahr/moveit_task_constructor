@@ -40,6 +40,8 @@
 
 #include <moveit/task_constructor/solvers/planner_interface.h>
 #include <moveit/planning_pipeline_interfaces/planning_pipeline_interfaces.hpp>
+#include <moveit/planning_pipeline_interfaces/solution_selection_functions.hpp>
+#include <moveit/planning_pipeline_interfaces/stopping_criterion_functions.hpp>
 #include <rclcpp/node.hpp>
 #include <moveit/macros/class_forward.h>
 
@@ -57,23 +59,34 @@ MOVEIT_CLASS_FORWARD(PipelinePlanner);
 class PipelinePlanner : public PlannerInterface
 {
 public:
-	// TODO: Deprecate
+	/** Simple Constructor to use only a single pipeline
+	 * \param [in] node ROS 2 node
+	 * \param [in] pipeline_name Name of the planning pipeline to be used. This is also the assumed namespace where the
+	 * parameters of this pipeline can be found \param [in] planner_id Planner id to be used for planning
+	 */
 	PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std::string& pipeline_name = "ompl",
 	                const std::string& planner_id = "");
 
+	[[deprecated("Deprecated: Use new constructor implementations.")]]  // clang-format off
+	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline){};
+
 	/** \brief Constructor
-	 * \param [in] node ROS 2 node handle
+	 * \param [in] node ROS 2 node
 	 * \param [in] pipeline_id_planner_id_map A map containing pairs of planning pipeline name and planner plugin name
 	 * for the planning requests
 	 * \param [in] planning_pipelines Optional: A map with the pipeline names and initialized corresponding planning
 	 * pipelines
+	 * \param [in] stopping_criterion_callback Callback function to stop parallel planning pipeline according to a user defined criteria
+	 * \param [in] solution_selection_function Callback function to choose the best solution when multiple pipelines are used
 	 */
 	PipelinePlanner(const rclcpp::Node::SharedPtr& node,
 	                const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
 	                const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines =
-	                    std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>());
+	                    std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>(),
+						const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback = &moveit::planning_pipeline_interfaces::stopAtFirstSolution,
+    const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function = &moveit::planning_pipeline_interfaces::getShortestSolution);
 
-	// TODO: Deprecate
+	[[deprecated("Replaced with setPlannerId(pipeline_name, planner_id)")]]  // clang-format off
 	void setPlannerId(const std::string& /*planner*/) { /* Do nothing */
 	}
 
@@ -84,9 +97,20 @@ public:
 	 */
 	bool setPlannerId(const std::string& pipeline_name, const std::string& planner_id);
 
+	/** \brief Set stopping criterion function for parallel planning
+	 * \param [in] stopping_criterion_callback New stopping criterion function that will be used
+	*/
+	void setStoppingCriterionFunction(const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback);
+
+	/** \brief Set solution selection function for parallel planning
+	 * \param [in] solution_selection_function New solution selection that will be used
+	*/
+	void setSolutionSelectionFunction(const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function);
+
 	/** \brief This function is called when an MTC task that uses this solver is initialized. If no pipelines are
 	 * configured when this function is invoked, the planning pipelines named in the 'pipeline_id_planner_id_map' are
-	 * initialized with the given robot model. \param [in] robot_model A robot model that is used to initialize the
+	 * initialized with the given robot model.
+	 * \param [in] robot_model A robot model that is used to initialize the
 	 * planning pipelines of this solver
 	 */
 	void init(const moveit::core::RobotModelConstPtr& robot_model) override;
@@ -156,6 +180,10 @@ protected:
 	/** \brief Map of pipelines names and planning pipelines. This map is used to quickly search for a requested motion
 	 * planning pipeline when during plan(..) */
 	std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines_;
+
+	moveit::planning_pipeline_interfaces::StoppingCriterionFunction stopping_criterion_callback_;
+	moveit::planning_pipeline_interfaces::SolutionSelectionFunction solution_selection_function_;
+
 };
 }  // namespace solvers
 }  // namespace task_constructor

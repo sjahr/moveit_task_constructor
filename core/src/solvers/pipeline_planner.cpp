@@ -40,9 +40,6 @@
 #include <moveit/task_constructor/task.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <moveit/planning_pipeline/planning_pipeline.h>
-#include <moveit/planning_pipeline_interfaces/planning_pipeline_interfaces.hpp>
-#include <moveit/planning_pipeline_interfaces/solution_selection_functions.hpp>
-#include <moveit/planning_pipeline_interfaces/stopping_criterion_functions.hpp>
 #include <moveit_msgs/msg/motion_plan_request.hpp>
 #include <moveit/kinematic_constraints/utils.h>
 
@@ -70,8 +67,13 @@ PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std:
 
 PipelinePlanner::PipelinePlanner(
     const rclcpp::Node::SharedPtr& node, const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
-    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines)
-  : node_(node), pipeline_id_planner_id_map_(pipeline_id_planner_id_map) {
+    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines,
+    const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback,
+    const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function)
+  : node_(node)
+  , pipeline_id_planner_id_map_(pipeline_id_planner_id_map)
+  , stopping_criterion_callback_(stopping_criterion_callback)
+  , solution_selection_function_(solution_selection_function) {
 	// If the pipeline name - pipeline map is passed as constructor argument, use it. Otherwise, it will be created in
 	// the init(..) function
 	if (!planning_pipelines.empty()) {
@@ -94,11 +96,6 @@ PipelinePlanner::PipelinePlanner(
 	                               planning_pipeline::PlanningPipeline::MOTION_PLAN_REQUEST_TOPIC);
 }
 
-// PipelinePlanner::PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline)
-//  : PipelinePlanner(rclcpp::Node::SharedPtr()) {
-//	planning_pipelines_.at(0) = planning_pipeline;
-//}
-
 bool PipelinePlanner::setPlannerId(const std::string& pipeline_name, const std::string& planner_id) {
 	// Only set ID if pipeline exists. It is not possible to create new pipelines with this command.
 	if (pipeline_id_planner_id_map_.count(pipeline_name) > 0) {
@@ -107,6 +104,15 @@ bool PipelinePlanner::setPlannerId(const std::string& pipeline_name, const std::
 	RCLCPP_WARN(node_->get_logger(), "PipelinePlanner does not have a pipeline called '%s'. Cannot set pipeline ID '%s'",
 	            pipeline_name.c_str(), planner_id.c_str());
 	return false;
+}
+
+void PipelinePlanner::setStoppingCriterionFunction(
+    const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_function) {
+	stopping_criterion_callback_ = stopping_criterion_function;
+}
+void PipelinePlanner::setSolutionSelectionFunction(
+    const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function) {
+	solution_selection_function_ = solution_selection_function;
 }
 
 void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
@@ -200,8 +206,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	// planWithParallelPipelines will return a vector with the single best solution
 	std::vector<::planning_interface::MotionPlanResponse> responses =
 	    moveit::planning_pipeline_interfaces::planWithParallelPipelines(
-	        requests, planning_scene, planning_pipelines_, &moveit::planning_pipeline_interfaces::stopAtFirstSolution,
-	        &moveit::planning_pipeline_interfaces::getShortestSolution);
+	        requests, planning_scene, planning_pipelines_, stopping_criterion_callback_, solution_selection_function_);
 
 	// If solutions exist and the first one is successful
 	if (!responses.empty() && responses.at(0)) {
