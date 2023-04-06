@@ -67,7 +67,7 @@ PipelinePlanner::PipelinePlanner(const rclcpp::Node::SharedPtr& node, const std:
 
 PipelinePlanner::PipelinePlanner(
     const rclcpp::Node::SharedPtr& node, const std::unordered_map<std::string, std::string>& pipeline_id_planner_id_map,
-    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr> planning_pipelines,
+    const std::unordered_map<std::string, planning_pipeline::PlanningPipelinePtr>& planning_pipelines,
     const moveit::planning_pipeline_interfaces::StoppingCriterionFunction& stopping_criterion_callback,
     const moveit::planning_pipeline_interfaces::SolutionSelectionFunction& solution_selection_function)
   : node_(node)
