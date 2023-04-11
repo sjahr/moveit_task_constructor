@@ -68,7 +68,7 @@ public:
 	                const std::string& planner_id = "");
 
 	[[deprecated("Deprecated: Use new constructor implementations.")]]  // clang-format off
-	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& planning_pipeline){};
+	PipelinePlanner(const planning_pipeline::PlanningPipelinePtr& /*planning_pipeline*/){};
 
 	/** \brief Constructor
 	 * \param [in] node ROS 2 node
