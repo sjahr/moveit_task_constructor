@@ -210,10 +210,13 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	        requests, planning_scene, planning_pipelines_, stopping_criterion_callback_, solution_selection_function_);
 
 	// If solutions exist and the first one is successful
-	if (!responses.empty() && responses.at(0)) {
-		// Choose the first solution trajectory as response
-		result = responses.at(0).trajectory;
-		return bool(result);
+	if (!responses.empty()) {
+		auto const solution = responses.at(0);
+		if (solution) {
+			// Choose the first solution trajectory as response
+			result = solution.trajectory;
+			return bool(result);
+		}
 	}
 	return false;
 }
