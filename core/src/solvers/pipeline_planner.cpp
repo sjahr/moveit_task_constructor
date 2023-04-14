@@ -101,7 +101,7 @@ bool PipelinePlanner::setPlannerId(const std::string& pipeline_name, const std::
 	if (pipeline_id_planner_id_map_.count(pipeline_name) > 0) {
 		pipeline_id_planner_id_map_[pipeline_name] = planner_id;
 	}
-	RCLCPP_WARN(node_->get_logger(), "PipelinePlanner does not have a pipeline called '%s'. Cannot set pipeline ID '%s'",
+	RCLCPP_ERROR(node_->get_logger(), "PipelinePlanner does not have a pipeline called '%s'. Cannot set pipeline ID '%s'",
 	            pipeline_name.c_str(), planner_id.c_str());
 	return false;
 }
