@@ -132,7 +132,7 @@ void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
 		    robot_model, node_);
 	}
 
-	// Configure all piplines according to the configuration in properties
+	// Configure all pipelines according to the configuration in properties
 	for (auto const& name_pipeline_pair : planning_pipelines_) {
 		name_pipeline_pair.second->displayComputedMotionPlans(properties().get<bool>("display_motion_plans"));
 		name_pipeline_pair.second->publishReceivedRequests(properties().get<bool>("publish_planning_requests"));
