@@ -60,7 +60,7 @@ Connect::Connect(const std::string& name, const GroupPlannerVector& planners) : 
 	p.declare<moveit_msgs::msg::Constraints>("path_constraints", moveit_msgs::msg::Constraints(),
 	                                         "constraints to maintain during trajectory");
 	p.declare<float>("goal_tolerance", 0.02,
-	                 "L1 distance between goal state and end of trajectory state should be within this tolerance");
+	                 "Distance between goal state and end of trajectory state should be within this tolerance");
 	properties().declare<TimeParameterizationPtr>("merge_time_parameterization",
 	                                              std::make_shared<TimeOptimalTrajectoryGeneration>());
 
