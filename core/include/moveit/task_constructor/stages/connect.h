@@ -80,6 +80,10 @@ public:
 		setProperty("path_constraints", std::move(path_constraints));
 	}
 
+	// To make sure the L1 distance between the goal state and the last waypoint in the planned trajectory
+	// are close enough.
+	void setGoalTolerance(float goal_tolerance) { setProperty("goal_tolerance", std::move(goal_tolerance)); }
+
 	void reset() override;
 	void init(const moveit::core::RobotModelConstPtr& robot_model) override;
 	void compute(const InterfaceState& from, const InterfaceState& to) override;
@@ -97,6 +101,8 @@ protected:
 	moveit::core::JointModelGroupPtr merged_jmg_;
 	std::list<SubTrajectory> subsolutions_;
 	std::list<InterfaceState> states_;
+
+	std::string name_;
 };
 }  // namespace stages
 }  // namespace task_constructor
