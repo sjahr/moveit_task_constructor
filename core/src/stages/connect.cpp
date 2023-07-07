@@ -59,6 +59,8 @@ Connect::Connect(const std::string& name, const GroupPlannerVector& planners) : 
 	p.declare<MergeMode>("merge_mode", WAYPOINTS, "merge mode");
 	p.declare<moveit_msgs::msg::Constraints>("path_constraints", moveit_msgs::msg::Constraints(),
 	                                         "constraints to maintain during trajectory");
+	p.declare<float>("goal_tolerance", 0.02,
+	                 "L1 distance between goal state and end of trajectory state should be within this tolerance");
 	properties().declare<TimeParameterizationPtr>("merge_time_parameterization",
 	                                              std::make_shared<TimeOptimalTrajectoryGeneration>());
 
@@ -169,7 +171,8 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 		// Check if the end goal and the last waypoint are close. The trajectory should be marked as failure otherwise.
 		if (success) {
 			const auto distance = end->getCurrentState().distance(trajectory->getLastWayPoint());
-			if (distance > 0.05) {
+			const auto& goal_tolerance = props.get<float>("goal_tolerance");
+			if (distance > goal_tolerance) {
 				RCLCPP_INFO_STREAM(LOGGER, "Stage Name : " << name_);
 				RCLCPP_INFO_STREAM(LOGGER, "The trajectory given by the plan function does not satisfy the goal state. "
 				                               << "Marking it as a failure");
