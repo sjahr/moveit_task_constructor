@@ -171,8 +171,8 @@ void Connect::compute(const InterfaceState& from, const InterfaceState& to) {
 			const auto distance = end->getCurrentState().distance(trajectory->getLastWayPoint());
 			if (distance > 0.05) {
 				RCLCPP_INFO_STREAM(LOGGER, "Stage Name : " << name_);
-				RCLCPP_INFO_STREAM(LOGGER, "The trajectory given by the plan function does not satisfy the goal state. " +
-				                               "Marking it as a failure");
+				RCLCPP_INFO_STREAM(LOGGER, "The trajectory given by the plan function does not satisfy the goal state. "
+				                               << "Marking it as a failure");
 				success = false;
 			}
 		}
