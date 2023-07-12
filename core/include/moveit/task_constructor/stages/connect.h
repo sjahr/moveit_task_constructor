@@ -73,7 +73,7 @@ public:
 		WAYPOINTS = 1
 	};
 
-	using GroupPlannerVector = std::vector<std::pair<std::string, solvers::PlannerInterfacePtr> >;
+	using GroupPlannerVector = std::vector<std::pair<std::string, solvers::PlannerInterfacePtr>>;
 	Connect(const std::string& name = "connect", const GroupPlannerVector& planners = {});
 
 	void setPathConstraints(moveit_msgs::msg::Constraints path_constraints) {
@@ -89,12 +89,14 @@ public:
 	void compute(const InterfaceState& from, const InterfaceState& to) override;
 
 protected:
-	SolutionSequencePtr makeSequential(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajectories,
-	                                   const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
-	                                   const InterfaceState& from, const InterfaceState& to);
-	SubTrajectoryPtr merge(const std::vector<robot_trajectory::RobotTrajectoryConstPtr>& sub_trajectories,
-	                       const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
-	                       const moveit::core::RobotState& state);
+	SolutionSequencePtr makeSequential(
+	    const std::vector<std::pair<std::string, robot_trajectory::RobotTrajectoryConstPtr>>& trajectory_planner_vector,
+	    const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes, const InterfaceState& from,
+	    const InterfaceState& to);
+	SubTrajectoryPtr merge(
+	    const std::vector<std::pair<std::string, robot_trajectory::RobotTrajectoryConstPtr>>& trajectory_planner_vector,
+	    const std::vector<planning_scene::PlanningSceneConstPtr>& intermediate_scenes,
+	    const moveit::core::RobotState& state);
 
 protected:
 	GroupPlannerVector planner_;
