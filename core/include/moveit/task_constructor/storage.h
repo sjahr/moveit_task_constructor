@@ -306,7 +306,7 @@ public:
 	void markAsFailure(const std::string& msg = std::string());
 	[[nodiscard]] inline bool isFailure() const { return !std::isfinite(cost_); }
 
-	[[nodiscard]] const std::string& planner_id() const { return planner_id_; }
+	[[nodiscard]] const std::string& plannerId() const { return planner_id_; }
 	void setPlannerId(const std::string& planner_id) { planner_id_ = planner_id; }
 
 	[[nodiscard]] const std::string& comment() const { return comment_; }
