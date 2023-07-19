@@ -198,6 +198,7 @@ bool MoveRelative::compute(const InterfaceState& state, planning_scene::Planning
 	if (getJointStateFromOffset(direction, jmg, scene->getCurrentStateNonConst())) {
 		// plan to joint-space target
 		success = planner_->plan(state.scene(), scene, jmg, timeout, robot_trajectory, path_constraints);
+		solution.setPlannerId(planner_->getPlannerId());
 	} else {
 		// Cartesian targets require an IK reference frame
 		const moveit::core::LinkModel* link;
