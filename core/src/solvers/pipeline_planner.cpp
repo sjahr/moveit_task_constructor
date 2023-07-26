@@ -153,6 +153,8 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& from, co
                            const moveit::core::JointModelGroup* joint_model_group, double timeout,
                            robot_trajectory::RobotTrajectoryPtr& result,
                            const moveit_msgs::msg::Constraints& path_constraints) {
+	last_successful_planner_.clear();
+
 	// Construct a Cartesian target pose from the given target transform and offset
 	geometry_msgs::msg::PoseStamped target;
 	target.header.frame_id = from->getPlanningFrame();
@@ -219,7 +221,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	return false;
 }
 std::string PipelinePlanner::getPlannerId() const {
-	return last_successful_planner_;
+	return last_successful_planner_.empty() ? std::string("Unkown") : last_successful_planner_;
 }
 }  // namespace solvers
 }  // namespace task_constructor
