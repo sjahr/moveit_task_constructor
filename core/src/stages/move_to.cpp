@@ -242,6 +242,7 @@ bool MoveTo::compute(const InterfaceState& state, planning_scene::PlanningSceneP
 
 		// plan to Cartesian target
 		success = planner_->plan(state.scene(), *link, offset, target, jmg, timeout, robot_trajectory, path_constraints);
+		solution.setPlannerId(planner_->getPlannerId());
 	}
 
 	// store result
