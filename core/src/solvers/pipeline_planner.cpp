@@ -221,7 +221,7 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	return false;
 }
 std::string PipelinePlanner::getPlannerId() const {
-	return last_successful_planner_.empty() ? std::string("Unkown") : last_successful_planner_;
+	return last_successful_planner_.empty() ? std::string("Unknown") : last_successful_planner_;
 }
 }  // namespace solvers
 }  // namespace task_constructor
